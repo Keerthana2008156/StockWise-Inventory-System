@@ -1,0 +1,644 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockWise | Inventory Dashboard</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css', v='stockwise-v8') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="brand">
+            <h2>StockWise</h2>
+            <p>Inventory Management</p>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a class="nav-link active" href="{{ url_for('index') }}">
+                <span>▦</span> Dashboard
+            </a>
+
+            <a class="nav-link" href="{{ url_for('add_product') }}">
+                <span>＋</span> Add Product
+            </a>
+
+            <a class="nav-link" href="{{ url_for('transactions') }}">
+                <span>⇄</span> Stock Transactions
+            </a>
+
+            <!-- STOCK ADJUSTMENTS -->
+            <a class="nav-link" href="{{ url_for('adjustments') }}">
+                <span>⚙</span> Stock Adjustments
+            </a>
+
+            <a class="nav-link" href="{{ url_for('analysis') }}">
+                <span>▤</span> Product Analysis
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>StockWise Inventory System</p>
+        </div>
+
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <header class="page-header">
+
+            <div>
+                <p class="eyebrow">INVENTORY MANAGEMENT</p>
+                <h1>Dashboard</h1>
+                <p>Monitor your inventory and stock levels.</p>
+            </div>
+
+            <a class="add-product-button"
+               href="{{ url_for('add_product') }}">
+                + Add Product
+            </a>
+
+        </header>
+
+        <!-- WELCOME BANNER -->
+        <section class="welcome-banner">
+
+            <div>
+                <p class="eyebrow">WELCOME TO STOCKWISE</p>
+                <h2>Your inventory, at a glance.</h2>
+                <p>Track products, stock levels and inventory value.</p>
+            </div>
+
+        </section>
+
+        <!-- STATISTICS -->
+        <section class="stats-grid">
+
+            <div class="stat-card">
+                <p>Total Products</p>
+                <h2>{{ total_products|default(0) }}</h2>
+                <span>Products in inventory</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Total Stock Units</p>
+                <h2>{{ total_stock|default(0) }}</h2>
+                <span>Current available units</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Inventory Value</p>
+                <h2>₹ {{ "{:,.2f}".format(inventory_value|default(0)|float) }}</h2>
+                <span>Value of current stock</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Low Stock Items</p>
+                <h2>{{ low_stock_count|default(0) }}</h2>
+                <span>Items needing attention</span>
+            </div>
+
+        </section>
+
+        <!-- INVENTORY ANALYTICS -->
+        <section class="analytics-grid">
+
+            <div class="movement-panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h2>Stock Distribution</h2>
+                        <p>Current stock available for each product.</p>
+                    </div>
+                </div>
+
+                <div class="analytics-chart-container">
+                    <canvas id="stockDistributionChart"></canvas>
+                </div>
+
+            </div>
+
+            <div class="movement-panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h2>Inventory Value</h2>
+                        <p>Product-wise inventory value.</p>
+                    </div>
+                </div>
+
+                <div class="analytics-chart-container">
+                    <canvas id="inventoryValueChart"></canvas>
+                </div>
+
+            </div>
+
+            <div class="movement-panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h2>Stock Status</h2>
+                        <p>Current inventory condition.</p>
+                    </div>
+                </div>
+
+                <div class="status-chart-container">
+                    <canvas id="stockStatusChart"></canvas>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- INVENTORY AND ALERTS -->
+        <section class="dashboard-grid">
+
+            <div class="inventory-panel">
+
+                <div class="panel-header">
+                    <div>
+                        <h2>Product Inventory</h2>
+                        <p>Search and filter your products.</p>
+                    </div>
+                </div>
+
+                <!-- SEARCH AND FILTERS -->
+                <div class="inventory-filters">
+
+                    <input
+                        type="search"
+                        id="productSearch"
+                        placeholder="Search product name or SKU..."
+                        aria-label="Search products"
+                    >
+
+                    <select id="categoryFilter"
+                            aria-label="Filter by category">
+
+                        <option value="">All Categories</option>
+
+                        {% for product in products %}
+                            {% if product.category_name %}
+                                <option value="{{ product.category_name|lower }}">
+                                    {{ product.category_name }}
+                                </option>
+                            {% endif %}
+                        {% endfor %}
+
+                    </select>
+
+                    <select id="statusFilter"
+                            aria-label="Filter by stock status">
+
+                        <option value="">All Stock Status</option>
+                        <option value="in stock">In Stock</option>
+                        <option value="low stock">Low Stock</option>
+
+                    </select>
+
+                    <button type="button" id="clearFilters">
+                        Clear
+                    </button>
+
+                </div>
+
+                <p id="searchResultCount" class="filter-result">
+                    Showing {{ products|length }} products
+                </p>
+
+                <!-- PRODUCT TABLE -->
+                <div class="table-container">
+
+                    <table id="productsTable">
+
+                        <thead>
+                            <tr>
+                                <th>PRODUCT NAME</th>
+                                <th>SKU</th>
+                                <th>CATEGORY</th>
+                                <th>CURRENT STOCK</th>
+                                <th>STATUS</th>
+                                <th>VALUE</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                        {% for product in products %}
+
+                            <tr class="product-row"
+                                data-name="{{ product.product_name|default('')|lower }}"
+                                data-sku="{{ product.sku|default('')|lower }}"
+                                data-category="{{ product.category_name|default('')|lower }}"
+                                data-status="{{ 'low stock' if product.low_stock else 'in stock' }}">
+
+                                <td>{{ product.product_name }}</td>
+
+                                <td>{{ product.sku }}</td>
+
+                                <td>
+                                    {{ product.category_name|default('Uncategorized') }}
+                                </td>
+
+                                <td>{{ product.current_stock }}</td>
+
+                                <td>
+
+                                    {% if product.low_stock %}
+
+                                        <span class="status-badge low-stock">
+                                            Low Stock
+                                        </span>
+
+                                    {% else %}
+
+                                        <span class="status-badge in-stock">
+                                            In Stock
+                                        </span>
+
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+                                    ₹ {{ "{:,.2f}".format(product.stock_value|default(0)|float) }}
+                                </td>
+
+                                <!-- EDIT AND DELETE ACTIONS -->
+                                <td>
+
+                                    <a href="{{ url_for('edit_product', product_id=product.product_id) }}"
+                                       class="add-product-button">
+                                        Edit
+                                    </a>
+
+                                    <form method="POST"
+                                          action="{{ url_for('delete_product', product_id=product.product_id) }}"
+                                          onsubmit="return confirm('Are you sure you want to delete this product?');"
+                                          style="display:inline;">
+
+                                        <button type="submit">
+                                            Delete
+                                        </button>
+
+                                    </form>
+
+                                </td>
+
+                            </tr>
+
+                        {% else %}
+
+                            <tr>
+                                <td colspan="7">
+                                    No products found. Click "Add Product" to get started.
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+
+                            <tr id="noSearchResults" style="display:none;">
+                                <td colspan="7">
+                                    No matching products found.
+                                </td>
+                            </tr>
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div class="right-column">
+
+                <!-- LOW STOCK ALERTS -->
+                <section class="alert-panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <h2>Low Stock Alerts</h2>
+                            <p>Products that need restocking.</p>
+                        </div>
+                    </div>
+
+                    {% if low_stock_products %}
+
+                        {% for product in low_stock_products %}
+
+                            <div class="alert-item">
+
+                                <div>
+                                    <strong>{{ product.product_name }}</strong>
+                                    <p>SKU: {{ product.sku }}</p>
+
+                                    <small>
+                                        Current stock: {{ product.current_stock }}
+                                    </small>
+                                </div>
+
+                                <span class="status-badge low-stock">
+                                    Restock
+                                </span>
+
+                            </div>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <p>All products have sufficient stock.</p>
+
+                    {% endif %}
+
+                </section>
+
+                <!-- INVENTORY INSIGHTS -->
+                <section class="insights-panel">
+
+                    <div class="panel-header">
+                        <div>
+                            <h2>Inventory Insights</h2>
+                            <p>Quick overview of your stock.</p>
+                        </div>
+                    </div>
+
+                    <div class="insight-item">
+                        <span>Total Products</span>
+                        <strong>{{ total_products|default(0) }}</strong>
+                    </div>
+
+                    <div class="insight-item">
+                        <span>Available Units</span>
+                        <strong>{{ total_stock|default(0) }}</strong>
+                    </div>
+
+                    <div class="insight-item">
+                        <span>Low Stock Items</span>
+                        <strong>{{ low_stock_count|default(0) }}</strong>
+                    </div>
+
+                </section>
+
+            </div>
+
+        </section>
+
+        <footer class="dashboard-footer">
+            <p>StockWise Inventory Management System</p>
+        </footer>
+
+    </main>
+
+</div>
+
+<!-- JAVASCRIPT -->
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // CHART DATA FROM FLASK
+
+    const labels = {{ stock_chart_labels|default([])|tojson }};
+    const stockValues = {{ stock_chart_values|default([])|tojson }};
+    const inventoryValues = {{ value_chart_values|default([])|tojson }};
+    const stockStatusValues = {{ stock_status_values|default([0, 0])|tojson }};
+
+    console.log("Chart.js:", typeof Chart);
+    console.log("Labels:", labels);
+    console.log("Stock:", stockValues);
+    console.log("Inventory:", inventoryValues);
+    console.log("Status:", stockStatusValues);
+
+    if (typeof Chart === "undefined") {
+
+        document.querySelectorAll(".analytics-grid .movement-panel")
+            .forEach(panel => {
+
+                panel.insertAdjacentHTML(
+                    "beforeend",
+                    '<p class="chart-message">Chart.js could not load. Check your internet connection.</p>'
+                );
+
+            });
+
+    } else {
+
+        // STOCK DISTRIBUTION CHART
+
+        new Chart(document.getElementById("stockDistributionChart"), {
+
+            type: "bar",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Available Stock",
+                    data: stockValues,
+                    backgroundColor: "#3B82F6",
+                    borderRadius: 6,
+                    maxBarThickness: 35
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+
+        });
+
+        // INVENTORY VALUE CHART
+
+        new Chart(document.getElementById("inventoryValueChart"), {
+
+            type: "bar",
+
+            data: {
+                labels: labels,
+
+                datasets: [{
+                    label: "Inventory Value (₹)",
+                    data: inventoryValues,
+                    backgroundColor: "#10B981",
+                    borderRadius: 6,
+                    maxBarThickness: 35
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+
+        });
+
+        // STOCK STATUS CHART
+
+        new Chart(document.getElementById("stockStatusChart"), {
+
+            type: "doughnut",
+
+            data: {
+                labels: ["In Stock", "Low Stock"],
+
+                datasets: [{
+                    data: stockStatusValues,
+                    backgroundColor: ["#10B981", "#F59E0B"],
+                    borderWidth: 2,
+                    borderColor: "#ffffff"
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: "bottom"
+                    }
+                }
+            }
+
+        });
+
+    }
+
+    // SEARCH AND FILTERS
+
+    const searchInput = document.getElementById("productSearch");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const clearButton = document.getElementById("clearFilters");
+    const resultCount = document.getElementById("searchResultCount");
+    const noResults = document.getElementById("noSearchResults");
+
+    const rows = Array.from(
+        document.querySelectorAll(".product-row")
+    );
+
+    function filterProducts() {
+
+        const searchText =
+            searchInput.value.trim().toLowerCase();
+
+        const selectedCategory =
+            categoryFilter.value.toLowerCase();
+
+        const selectedStatus =
+            statusFilter.value.toLowerCase();
+
+        let visibleCount = 0;
+
+        rows.forEach(function(row) {
+
+            const name = row.dataset.name || "";
+            const sku = row.dataset.sku || "";
+            const category = row.dataset.category || "";
+            const status = row.dataset.status || "";
+
+            const matchesSearch =
+                name.includes(searchText) ||
+                sku.includes(searchText);
+
+            const matchesCategory =
+                !selectedCategory ||
+                category === selectedCategory;
+
+            const matchesStatus =
+                !selectedStatus ||
+                status === selectedStatus;
+
+            const showRow =
+                matchesSearch &&
+                matchesCategory &&
+                matchesStatus;
+
+            row.style.display = showRow ? "" : "none";
+
+            if (showRow) {
+                visibleCount++;
+            }
+
+        });
+
+        if (noResults) {
+
+            noResults.style.display =
+                visibleCount === 0 && rows.length > 0 ? "" : "none";
+
+        }
+
+        resultCount.textContent =
+            "Showing " + visibleCount +
+            " of " + rows.length + " products";
+
+    }
+
+    searchInput.addEventListener("input", filterProducts);
+    categoryFilter.addEventListener("change", filterProducts);
+    statusFilter.addEventListener("change", filterProducts);
+
+    clearButton.addEventListener("click", function() {
+
+        searchInput.value = "";
+        categoryFilter.value = "";
+        statusFilter.value = "";
+
+        filterProducts();
+
+    });
+
+    filterProducts();
+
+});
+
+</script>
+
+</body>
+</html>

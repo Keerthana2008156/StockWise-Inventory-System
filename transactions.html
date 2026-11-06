@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockWise | Stock Transactions</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css', v='stockwise-v3') }}">
+</head>
+<body>
+<div class="transaction-page">
+
+    <header class="page-header">
+        <div>
+            <p class="eyebrow">STOCKWISE · INVENTORY CONTROL</p>
+            <h1>Stock Transactions</h1>
+            <p class="page-subtitle">
+                
+                Record incoming stock and outgoing stock.
+            </p>
+        </div>
+        
+<a href="{{ url_for('index') }}" class="add-product-button">
+
+            ← Dashboard
+        </a>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="transaction-layout">
+        <article class="panel transaction-form-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="heading-icon">⇄</span>
+                    <h2>Record a Transaction</h2>
+                </div>
+            </div>
+
+            <form method="POST" class="transaction-form">
+                <label for="transaction_type">Transaction Type</label>
+                <select name="transaction_type" id="transaction_type" required>
+                    <option value="IN">Stock IN — Add stock</option>
+                    <option value="OUT">Stock OUT — Remove stock</option>
+                </select>
+
+                <label for="product_id">Select Product</label>
+                <select name="product_id" id="product_id" required>
+                    <option value="">Choose a product</option>
+                    {% for product in products %}
+                        <option value="{{ product.product_id }}">
+                            {{ product.product_name }} ({{ product.sku }})
+                            — Available: {{ product.current_stock }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" name="quantity"
+                       min="1" step="1" placeholder="Enter quantity" required>
+
+                <label for="supplier_id">Supplier (optional)</label>
+                <select name="supplier_id" id="supplier_id">
+                    <option value="">No supplier selected</option>
+                    {% for supplier in suppliers %}
+                        <option value="{{ supplier.supplier_id }}">
+                            {{ supplier.supplier_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+
+                <label for="notes">Notes (optional)</label>
+                <textarea id="notes" name="notes" rows="3"
+                          placeholder="Reason for this transaction..."></textarea>
+
+                <button type="submit" class="submit-button">
+                    Save Transaction
+                </button>
+            </form>
+        </article>
+
+        <article class="panel transaction-info-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="heading-icon">▤</span>
+                    <h2>How it works</h2>
+                </div>
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-info-icon in-icon">↑</div>
+                <div>
+                    <strong>Stock IN</strong>
+                    <p>When new products arrive, record the quantity to increase available stock.</p>
+                </div>
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-info-icon out-icon">↓</div>
+                <div>
+                    <strong>Stock OUT</strong>
+                    <p>When items are sold or issued, record the quantity to decrease available stock.</p>
+                </div>
+            </div>
+            <p class="transaction-tip">
+                Tip: Stock OUT quantities cannot exceed the available stock.
+            </p>
+        </article>
+    </section>
+
+    <section class="panel history-panel">
+        <div class="panel-heading">
+            <div>
+                <span class="heading-icon">◷</span>
+                <h2>Transaction History</h2>
+            </div>
+            <span class="table-count">Latest 100 records</span>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>DATE</th>
+                        <th>PRODUCT</th>
+                        <th>TYPE</th>
+                        <th>QUANTITY</th>
+                        <th>SUPPLIER</th>
+                        <th>NOTES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for t in transaction_history %}
+                    <tr>
+                        <td>{{ t.transaction_id }}</td>
+                        <td>{{ t.transaction_date }}</td>
+                        <td>
+                            <strong class="product-title">
+                                {{ t.product_name }}
+                            </strong>
+                            <br>
+                            <small class="sku">{{ t.sku }}</small>
+                        </td>
+                        <td>
+                            {% if t.transaction_type == 'IN' %}
+                                <span class="status normal">Stock IN</span>
+                            {% else %}
+                                <span class="status low">Stock OUT</span>
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ t.quantity }}</strong></td>
+                        <td>{{ t.supplier_name or '—' }}</td>
+                        <td>{{ t.notes or '—' }}</td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            No transactions recorded yet.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

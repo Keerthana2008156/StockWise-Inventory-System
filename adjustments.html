@@ -1,0 +1,122 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockWise | Stock Adjustments</title>
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="app-shell">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <h2>StockWise</h2>
+            <p>Inventory Management</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a class="nav-link" href="{{ url_for('index') }}">▦ Dashboard</a>
+            <a class="nav-link" href="{{ url_for('add_product') }}">＋ Add Product</a>
+            <a class="nav-link" href="{{ url_for('transactions') }}">⇄ Stock Transactions</a>
+            <a class="nav-link active" href="{{ url_for('adjustments') }}">⚙ Stock Adjustments</a>
+            <a class="nav-link" href="{{ url_for('analysis') }}">▤ Product Analysis</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>StockWise Inventory System</p>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">INVENTORY MANAGEMENT</p>
+                <h1>Stock Adjustments</h1>
+                <p>Record and track manual stock corrections.</p>
+            </div>
+        </header>
+
+        <section class="movement-panel">
+            <h2>New Adjustment</h2>
+
+            <form method="POST">
+                <label>Product</label>
+                <select name="product_id" required>
+                    <option value="">Select Product</option>
+                    {% for product in products %}
+                    <option value="{{ product.product_id }}">
+                        {{ product.product_name }} - Available: {{ product.current_stock }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <label>Adjustment Type</label>
+                <select name="adjustment_type" required>
+                    <option value="">Select Type</option>
+                    <option value="INCREASE">Increase Stock</option>
+                    <option value="DECREASE">Decrease Stock</option>
+                </select>
+
+                <label>Quantity</label>
+                <input type="number" name="quantity" min="1" required>
+
+                <label>Reason</label>
+                <input type="text" name="reason" maxlength="255"
+                       placeholder="Enter adjustment reason" required>
+
+                <br><br>
+                <button type="submit" class="add-product-button">
+                    Save Adjustment
+                </button>
+            </form>
+        </section>
+
+        <section class="movement-panel">
+            <h2>Adjustment History</h2>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Type</th>
+                            <th>Quantity</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for item in adjustment_history %}
+                        <tr>
+                            <td>{{ item.adjustment_id }}</td>
+                            <td>{{ item.adjustment_date }}</td>
+                            <td>{{ item.product_name }}</td>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ item.adjustment_type }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>{{ item.reason }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7">No adjustment records found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="dashboard-footer">
+            <p>StockWise Inventory Management System</p>
+        </footer>
+    </main>
+</div>
+</body>
+</html>
+```

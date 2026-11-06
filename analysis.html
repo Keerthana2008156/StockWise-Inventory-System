@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockWise | Product Analysis</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <h2>StockWise</h2>
+            <p>Inventory Management</p>
+        </div>
+
+        <nav class="sidebar-nav">
+
+            <a class="nav-link" href="{{ url_for('index') }}">
+                <span>▦</span> Dashboard
+            </a>
+
+            <a class="nav-link" href="{{ url_for('add_product') }}">
+                <span>＋</span> Add Product
+            </a>
+
+            <a class="nav-link" href="{{ url_for('transactions') }}">
+                <span>⇄</span> Stock Transactions
+            </a>
+
+            <a class="nav-link active" href="{{ url_for('analysis') }}">
+                <span>▤</span> Product Analysis
+            </a>
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <p>StockWise Inventory System</p>
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <header class="page-header">
+            <div>
+                <p class="eyebrow">INVENTORY ANALYTICS</p>
+                <h1>Product Movement Analysis</h1>
+                <p>Identify fast-moving and slow-moving products.</p>
+            </div>
+
+            <a class="add-product-button"
+               href="{{ url_for('index') }}">
+                Back to Dashboard
+            </a>
+        </header>
+
+
+        <!-- MATPLOTLIB STOCK MOVEMENT CHART -->
+
+        <section class="movement-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h2>Stock Movement Chart</h2>
+                    <p>Product-wise Stock IN and Stock OUT comparison.</p>
+                </div>
+            </div>
+
+            {% if chart_image %}
+
+                <div style="width:100%; overflow-x:auto; text-align:center;">
+                    <img
+                        src="data:image/png;base64,{{ chart_image }}"
+                        alt="Stock Movement Chart"
+                        style="width:100%; max-width:900px; height:auto;"
+                    >
+                </div>
+
+            {% else %}
+
+                <p>No stock movement data available yet.</p>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- FAST MOVING PRODUCTS -->
+
+        <section class="movement-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h2>Fast-Moving Products</h2>
+                    <p>Top 5 products based on Stock OUT quantity.</p>
+                </div>
+            </div>
+
+            {% if fast_products %}
+
+                <div class="table-container">
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PRODUCT</th>
+                                <th>SKU</th>
+                                <th>TOTAL STOCK OUT</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for product in fast_products %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.sku }}</td>
+                                <td>{{ product.total_out|int }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <p>No Stock OUT transactions recorded yet.</p>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- SLOW MOVING PRODUCTS -->
+
+        <section class="movement-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h2>Slow-Moving Products</h2>
+                    <p>Products with no recorded Stock OUT transactions.</p>
+                </div>
+            </div>
+
+            {% if slow_products %}
+
+                <div class="table-container">
+
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PRODUCT</th>
+                                <th>SKU</th>
+                                <th>TOTAL STOCK IN</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for product in slow_products %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                <td>{{ product.sku }}</td>
+                                <td>{{ product.total_in|int }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                </div>
+
+            {% else %}
+
+                <p>All products have recorded Stock OUT transactions.</p>
+
+            {% endif %}
+
+        </section>
+
+
+        <!-- COMPLETE MOVEMENT SUMMARY -->
+
+        <section class="movement-panel">
+
+            <div class="panel-header">
+                <div>
+                    <h2>Complete Movement Summary</h2>
+                    <p>Product-wise Stock IN, Stock OUT and net movement.</p>
+                </div>
+            </div>
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>PRODUCT</th>
+                            <th>SKU</th>
+                            <th>TOTAL IN</th>
+                            <th>TOTAL OUT</th>
+                            <th>NET MOVEMENT</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for product in movement_data %}
+
+                        <tr>
+                            <td>{{ product.product_name }}</td>
+                            <td>{{ product.sku }}</td>
+                            <td>{{ product.total_in|int }}</td>
+                            <td>{{ product.total_out|int }}</td>
+                            <td>{{ product.net_movement|int }}</td>
+                        </tr>
+
+                        {% else %}
+
+                        <tr>
+                            <td colspan="5">No products available.</td>
+                        </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <footer class="dashboard-footer">
+            <p>StockWise Inventory Management System</p>
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+</html>
